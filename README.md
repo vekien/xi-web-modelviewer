@@ -23,3 +23,7 @@ You can use any web server, I simply use VS Code Live Server plugin:
 - https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer
 
 With this installed, simply right-click the `viewer.html` and click "Open with Live Server" and you're good to go!
+
+![](preview1.png)
+
+![](preview2.png)
