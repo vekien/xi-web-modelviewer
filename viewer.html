@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>FFXI MODEL VIEWER</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+		<script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+		<style>
+			html, body {
+				font-family: 'Roboto', sans-serif;
+				background-color: aliceblue;
+			}
+			.tar { text-align: right; }
+			.field:not(:last-child) { margin-bottom: 0; }
+			.header { 
+				position: absolute;
+				top: 20px; right: 20px;
+				font-size: 18px;
+				padding: 10px;
+			}
+			.startup-modal, .settings-modal, .asset-loading { 
+				width: 500px;
+				position: absolute;
+				translate: -50% -50%;
+				top: 50%; left: 50%;
+			}
+			.settings-modal {
+				display: none;
+			}
+
+			.asset-loading {
+				display: none;
+				text-align: center;
+				font-weight: bold;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div class="box header columns">
+			<div class="field is-grouped">
+				<div class="select is-small is-rounded">
+					<select class="asset-category-select">
+						<option>---</option>
+						<optgroup label="Choose a Category&nbsp;&nbsp;&nbsp;">
+							<option value="Gear">Gear</option>
+							<option value="Weapons">Weapons</option>
+							<option value="NPC1">NPC 1</option>
+							<option value="NPC2">NPC 2</option>
+							<option value="Zones">Zones</option>
+						</optgroup>
+					</select>
+				</div>
+			</div>
+			&nbsp;&nbsp;&nbsp;
+			<div class="field is-grouped">
+				<div class="select is-small is-rounded">
+					<select class="asset-select" disabled></select>
+				</div>
+			</div>
+			&nbsp;&nbsp;&nbsp;
+			<div class="field is-grouped">
+				<div class="select is-small is-rounded">
+					<select class="asset-anims-select" disabled>
+					</select>
+				</div>
+			</div>
+			&nbsp;&nbsp;&nbsp;
+			<div class="field is-grouped">
+				<button class="button is-small is-link is-rounded startup-open">ABOUT</button>
+			</div>
+		</div>
+
+		<div class="box startup-modal">
+			<div class="columns">
+				<div class="column is-three-quarters">
+					<h1 class="is-size-4">FFXI Web Model Viewer</h1>
+				</div>
+				<div class="column tar">
+					<button class="button is-small is-dark is-rounded startup-close">CLOSE</button>
+				</div>
+			</div>
+			<p>
+				Welcome to this very basic FBX viewer that is designed for FFXI Models exported via <a href="https://github.com/vekien/xidata" target="_blank">xidata</a>.
+				<br/><br/>
+				To get started, select a model from the dropdown at the top-right.
+				<br/><br/>
+				You can find the <a href="https://github.com/vekien/xi-web-modelviewer" target="_blank">source code here</a>, feel free to do whatever you want with it :) 
+			</p>
+		</div>
+
+		<div class="notification is-warning asset-loading">Loading FFXI Asset ...</div>
+
+		<script>
+			// Access variables
+			let camera, scene, renderer, stats, controls, asset_object, anim_mixer;
+			let asset_data = {}, asset_loaded_data;
+		</script>
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "https://unpkg.com/three@v0.152.2/build/three.module.js",
+					"three/addons/": "https://unpkg.com/three@v0.152.2/examples/jsm/"
+				}
+			}
+		</script>
+		<script type="module">
+			import * as THREE from 'three';
+			import Stats from 'three/addons/libs/stats.module.js';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+			import { FirstPersonControls } from 'three/addons/controls/FirstPersonControls.js';
+			import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+
+			const clock = new THREE.Clock();
+			const fbxloader = new FBXLoader();
+		
+			// Initially render the form
+			function InitialRender() {
+				const domLoading = document.querySelector('.asset-loading');
+				const container = document.createElement('div');
+				document.body.appendChild( container );
+
+				// Add the camera
+				camera = new THREE.PerspectiveCamera(92, window.innerWidth / window.innerHeight, 0.1, 50000);
+				camera.position.set(100, 200, 300);				
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color(0x63a4e6);
+
+				// Add hemi light
+				const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x222222, 2 );
+				hemiLight.position.set( 0, 200, 0 );
+				scene.add(hemiLight);
+
+				// Add directional lighting
+				const dirLight = new THREE.DirectionalLight( 0xffffff, 2 );
+				dirLight.position.set( 0, 200, 100 );
+				dirLight.castShadow = true;
+				dirLight.shadow.camera.top = 500;
+				dirLight.shadow.camera.bottom = -200;
+				dirLight.shadow.camera.left = -500;
+				dirLight.shadow.camera.right = 500;
+				scene.add(dirLight);
+
+				domLoading.style.display = "block";
+
+				// Load the FBX Model
+				fbxloader.load(asset_loaded_data.file, function(object) {
+					object.scale.set(asset_loaded_data.scale, asset_loaded_data.scale, asset_loaded_data.scale);
+					
+					// Enable alphas
+					object.traverse(function(child) {
+						// Adjust the textures
+						if (child.material) {
+							child.material.specular = new THREE.Color(0x000000);
+							child.material.shininess = 0;
+							child.material.side = THREE.DoubleSide;
+
+							// Check if texture filenames contain "softblend" and if so, enable alpha
+							if (asset_loaded_data.category == "NPC1" || child.material.name.includes('softblend')) {
+								child.material.transparent = true;
+								child.material.alphaTest = 0.9;
+								child.material.needsUpdate = true;
+							}
+						}						
+					});
+
+					scene.add(object);
+					asset_object = object;
+
+					domLoading.style.display = "none";
+				});	
+
+				// Render
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.shadowMap.enabled = true;
+				container.appendChild( renderer.domElement );
+
+				// Set specific controls
+				controls = new OrbitControls( camera, renderer.domElement );
+				controls.target.set( 0, 150, 0 );
+				controls.minDistance = 50;
+				controls.maxDistance = 6000;
+				controls.panSpeed = 1;
+				controls.zoomSpeed = 1.4;
+				controls.screenSpacePanning = true;
+				controls.update();
+
+				// stats
+				stats = new Stats();
+				container.appendChild(stats.dom);
+			}
+
+			// Asset selection listener
+			document.querySelector('.asset-anims-select').addEventListener('change', (event) => {
+				if (anim_mixer) {
+					anim_mixer.stopAllAction();
+				}
+				
+				PlayAnimation(event.target.value);
+			});
+
+			function PlayAnimation(anim) {
+				// After loading the main FBX file, load the animation FBX file
+				const animationLoader = new FBXLoader();
+				animationLoader.load(anim, function (animationObject) {
+					// Assuming the animation FBX file contains a single animation clip
+					anim_mixer = new THREE.AnimationMixer(asset_object);
+					const animationClip = animationObject.animations[0];
+
+					// Create an animation action and play it
+					const action = anim_mixer.clipAction(animationClip);
+					action.play();
+
+					// Animate the scene in the render loop
+					function animate() {
+						requestAnimationFrame(animate);
+						anim_mixer.update(clock.getDelta());
+						renderer.render(scene, camera);
+					}
+					animate();
+				});
+			}
+
+			// Loop render frame
+			function render() {
+				controls.update();
+				stats.update();
+				renderer.render(scene, camera);
+				requestAnimationFrame(render);
+			}
+
+			InitialRender();
+			requestAnimationFrame(render);
+
+		</script>
+
+		<script>
+			// Load asset list
+			fetch('assets.json')
+				.then(response => response.json())
+				.then(data => {
+					asset_data = data;
+
+					// Render any loaded assets
+					RenderLoadedAsset();
+				})
+				.catch(error => {
+					console.error('Error loading JSON file:', error);
+				});
+
+			// Add event listener for the asset select category
+			document.querySelector('.asset-category-select').addEventListener('change', (event) => {
+				BuildAssetDropdown(event.target.value);
+			});
+			
+			// Asset selection listener
+			document.querySelector('.asset-select').addEventListener('change', (event) => {
+				window.location.hash = `${event.target.value}`;
+				window.location.reload();
+			});
+
+			// Listen to window resize to update the renderer size.
+			window.addEventListener( 'resize', (event) => {
+				if (camera) {
+					camera.aspect = window.innerWidth / window.innerHeight;
+					camera.updateProjectionMatrix();
+				}
+				
+				if (renderer) {
+					renderer.setSize(window.innerWidth, window.innerHeight);
+				}
+			});
+
+			// Open the settings window.
+			document.querySelector('.startup-open').addEventListener('click', (event) => {
+				document.querySelector('.startup-modal').style.display = "block";
+			});
+
+			// Close settings window.
+			document.querySelector('.startup-close').addEventListener('click', (event) => {
+				document.querySelector('.startup-modal').style.display = "none";
+			});
+
+			// Build a dropdown when changing category
+			function BuildAssetDropdown(category) {
+				if (category === "---") {
+					return;
+				}
+
+				const asset_select_dom = document.querySelector('.asset-select');
+				
+				// create the new select box
+				const select = document.createElement('optgroup');
+
+				// Default Entry
+				const option = document.createElement('option');
+				option.textContent = "---";
+				select.appendChild(option);
+
+				// Grab data
+				data = asset_data[category];
+
+				data.forEach((item, index) => {
+					const option = document.createElement('option');
+					option.value = `${category}_${index}`;
+					option.textContent = item.name;
+					select.appendChild(option);
+				});
+			
+				asset_select_dom.replaceChildren(select);
+				asset_select_dom.disabled = false;
+			}
+
+			// Build a dropdown when changing category
+			function BuildAssetAnimsDropdown(anims) {
+				const asset_select_dom = document.querySelector('.asset-anims-select');
+				
+				// create the new select box
+				const select = document.createElement('optgroup');
+
+				// Default Entry
+				const option = document.createElement('option');
+				option.textContent = "---";
+				select.appendChild(option);
+
+				anims.forEach((item, index) => {
+					const option = document.createElement('option');
+					option.value = item.file;
+					option.textContent = item.name;
+					select.appendChild(option);
+				});
+			
+				asset_select_dom.replaceChildren(select);
+				asset_select_dom.disabled = false;
+			}
+
+			// Render the currently loaded asset
+			function RenderLoadedAsset() {
+				// Grab loaded asset
+				let asset_loaded = window.location.hash;
+
+				// If we have a loaded asset, begin loading everything
+				if (asset_loaded) {
+					asset_loaded = asset_loaded.slice(1);
+					asset_parts = asset_loaded.split('_');
+
+					// grab asset data
+					asset_loaded_data = asset_data[asset_parts[0]][asset_parts[1]];
+
+					// Build dropdown
+					BuildAssetDropdown(asset_parts[0]);
+
+					// if the rendered asset has animations, build that dropdown
+					if (asset_loaded_data.anims) {
+						BuildAssetAnimsDropdown(asset_loaded_data.file_anims);
+					}
+
+					// set the dropdowns
+					document.querySelector('.asset-category-select').value = asset_parts[0];
+					document.querySelector('.asset-select').value = asset_loaded;
+
+					// hide welcome
+					document.querySelector('.startup-modal').style.display = 'none';					
+				}
+			}
+		</script>
+
+	</body>
+</html>
