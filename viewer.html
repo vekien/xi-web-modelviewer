@@ -125,7 +125,7 @@
 				camera = new THREE.PerspectiveCamera(92, window.innerWidth / window.innerHeight, 0.1, 50000);
 				camera.position.set(100, 200, 300);				
 				scene = new THREE.Scene();
-				scene.background = new THREE.Color(0x63a4e6);
+				scene.background = new THREE.Color(0xbcd9f7);
 
 				// Add hemi light
 				const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x222222, 2 );
@@ -232,8 +232,10 @@
 				requestAnimationFrame(render);
 			}
 
-			InitialRender();
-			requestAnimationFrame(render);
+			if (asset_loaded_data) {
+				InitialRender();
+				requestAnimationFrame(render);
+			}
 
 		</script>
 
