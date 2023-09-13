@@ -32,8 +32,6 @@ foreach(array_keys($assets) as $assetName) {
             if ($assetName == "Gear") {
                 [$a, $type, $race, $slot, $name, $filename] = explode("/", $path);
 
-                echo "{$race} - {$slot} - {$name} \n";
-
                 $assets[$assetName][] = [
                     'name' => "{$race} - {$slot} - {$name}",
                     'category' => $assetName,
@@ -54,8 +52,6 @@ foreach(array_keys($assets) as $assetName) {
 
                 [$a, $type, $race, $name] = explode("/", $path);
 
-                echo "{$race} - {$name} \n";
-
                 $assets[$assetName][] = [
                     'name' => "{$race} - {$name}",
                     'category' => $assetName,
@@ -69,8 +65,6 @@ foreach(array_keys($assets) as $assetName) {
             if ($assetName == "NPC2") {
                 [$a, $type, $zone, $name] = explode("/", $path);
 
-                echo "{$zone} - {$name} \n";
-
                 $assets[$assetName][] = [
                     'name' => "{$zone} - {$name}",
                     'category' => $assetName,
@@ -83,8 +77,6 @@ foreach(array_keys($assets) as $assetName) {
             // handle weapons
             if ($assetName == "Weapons") {
                 [$a, $type, $slot, $type, $name] = explode("/", $path);
-
-                echo "{$slot} - {$type} - {$name} \n";
 
                 $assets[$assetName][] = [
                     'name' => "{$slot} - {$type} - {$name}",
@@ -103,8 +95,6 @@ foreach(array_keys($assets) as $assetName) {
                 if ($expansion == "_Doors") {
                     continue;
                 }
-
-                echo "{$expansion} - {$name} \n";
 
                 $assets[$assetName][] = [
                     'name' => "{$expansion} - {$name}",
@@ -145,4 +135,32 @@ echo "\n-- SAVING JSON --\n";
 
 file_put_contents(__DIR__ .'/assets.json', json_encode($assets, JSON_PRETTY_PRINT));
 
-echo("\n-- FINISHED --\n");
+echo "\n-- FINISHED --\n";
+echo "\n-- WRITING TO viewer.html --\n";
+
+$assets = json_encode($assets);
+$assets = "let asset_data = {$assets}";
+
+$htmlFilePath = 'viewer.html';
+$lines = file($htmlFilePath);
+
+// Find the line with "// ASSET DATA //"
+$found = false;
+$lineNumber = 0;
+foreach ($lines as $key => $line) {
+    if (strpos($line, '// ASSET DATA //') !== false) {
+        $found = true;
+        $lineNumber = $key;
+        break;
+    }
+}
+
+if ($found) {
+    // Delete the contents on the next line and insert the new asset data
+    $lines[$lineNumber + 1] = $assets . "\n";
+
+    // Write the modified lines back to the file
+    file_put_contents($htmlFilePath, implode('', $lines));
+}
+
+echo "\n-- UPDATED viewer.html --\n";
