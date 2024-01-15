@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>FFXI MODEL VIEWER</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
+		<script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+		
+		<!-- Fonts -->
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+		<style>
+			html, body {
+				font-family: 'Roboto', sans-serif;
+				font-size: 18px;
+				color: #fff;
+				background: rgb(19,19,19);
+				background: linear-gradient(0deg, rgba(19,19,19,1) 0%, rgba(40,40,40,1) 100%);
+				overflow: hidden;
+			}
+			.model_viewer_curtains {
+				position: absolute;
+				top: 0; bottom: 0; left: 0; right: 0;
+				background: rgb(19,19,19);
+				background: linear-gradient(0deg, rgba(19,19,19,1) 0%, rgba(40,40,40,1) 100%);
+				transition: opacity 200ms ease;
+				pointer-events: none;
+			}
+			.model_viewer_curtains-hide {
+				opacity: 0;;
+			}
+			.logo {
+				position: absolute;
+				top: 25px;
+				left: 25px;
+				height: 80px;
+				pointer-events: none;
+			}
+			.loading {
+				position: absolute;
+				top: 50%; left: 50%;
+				transform: translate(-50%, -50%);
+				width: 300px;
+				padding: 30px;
+				background-color: #111;
+				border-radius: 8px;
+				box-shadow: 0 1px 8px rgba(0,0,0,0.3);
+				font-size: 32px;
+				font-weight: 300;
+				letter-spacing: 4px;
+				text-align: center;
+				color: #fff;
+				opacity: 1;
+				transition: opacity 400ms ease;
+				pointer-events: none;
+			}
+
+			.loading-fadeout {
+				opacity: 0;
+			}
+
+			.title {
+				position: absolute;
+				right: 35px; top: 35px;
+				text-align: right;
+				font-size: 32px;
+				font-weight: 200;
+				font-style: italic;
+				text-shadow: 0 1px 4px #000;
+				text-transform: uppercase;
+				color: #fff;
+				letter-spacing: 5px;
+				line-height: 40px;
+			}
+
+			.nav {
+				position: absolute;
+				left: 0; top: 160px;
+		
+			}
+
+			.nav .nav_button {
+				display: inline-block;
+				font-size: 24px;
+				font-style: italic;
+				font-weight: 300;
+				letter-spacing: 1px;;
+				text-shadow: 0 1px 1px #000;
+				margin-bottom: 20px;
+				padding: 15px 5px 15px 40px;
+				border-bottom: solid 1px transparent;
+				transition: 200ms ease;
+				cursor: pointer;
+				background-color:transparent;
+			}
+
+			.nav .nav_button_active {
+				color: #c9ff8f;
+				border-bottom: solid 1px #baff6f;
+				font-weight: 400;
+			}
+
+			.nav .nav_button:hover {
+				border-bottom: solid 1px #fff;
+				padding: 15px 5px 15px 60px;
+			}
+
+			.customize {
+				position: absolute;
+				right: 35px; top: 160px;
+				width: 400px;
+				text-align: right;
+				margin-right: -450px;
+				transition: 400ms ease;
+			}
+
+			.customize-show {
+				margin-right: 0;
+			}
+
+			.customize h2 {
+				font-size: 24px;
+				font-weight: 400;
+				margin-bottom: 5px;
+				text-transform: uppercase;
+				color: #6afdff;
+			}
+
+			.customize_race_and_gender {
+				display: flex;
+				flex-direction: row;
+				flex-wrap: wrap;
+				align-content: flex-start;
+				justify-content: flex-start;
+				align-items: flex-start;
+				margin-top: 20px;
+			}
+
+			.customize_race_and_gender div {
+				flex: 0 1 auto;
+				margin-bottom: 10px;
+				width: 195px;
+				height: 190px;
+				border-radius: 10px;
+				box-shadow: 0 1px 2px #000, inset 0 0 4px 1px rgba(255,255,255,0.4);
+				background-size: auto 100% ;
+				background-position:  center;
+				transition: 200ms ease;
+				text-align: center;
+				position: relative;
+				cursor: pointer;
+			}
+
+			.customize_race_and_gender div:hover {
+				box-shadow: 0 1px 5px 2px #000, inset 0 0 8px 3px #afff59;
+				background-size: auto 110% ;
+			}
+
+			.customize_race_and_gender div span {
+				text-align: center;
+				position: absolute;
+				bottom: 5px;
+				left: 8px;
+				font-size: 15px;
+				font-weight: 800;
+				font-style: italic;
+				letter-spacing: 2px;
+				text-transform: uppercase;
+				text-shadow: 0 0 8px #000, 0 0 8px #000;
+				pointer-events: none;
+			}
+
+			.customize_race_and_gender div:nth-child(even) {
+				margin-left: 5px;
+			}
+
+			.customize_race_and_gender div:nth-child(odd) {
+				margin-right: 5px;
+			}
+
+			.emotes {
+				position: absolute;
+				bottom: 30px;
+				left: 30px;
+				
+			}
+
+			.emotes select {
+				font-size: 24px;
+				background-color: #000;
+				color: #fff;
+				padding: 5px;
+				border-radius: 10px;
+				border: solid 1px #000;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="model_viewer"></div>
+		<div class="model_viewer_curtains"></div>
+
+		<img class="logo" src="ui_logo1.png"/>
+		<div class="title">Character<br/>Creation</div>
+
+		<div class="nav">
+			<span class="nav_button nav_button_active">Race & Gender</span>
+			<br/>
+			<span class="nav_button">Appearance</span>
+			<br/>
+			<span class="nav_button">Size</span>
+			<br/>
+			<span class="nav_button">Starting Job</span>
+			<br/>
+			<span class="nav_button">Starting Nation</span>
+		</div>
+		<div class="customize">
+			<h2 class="customise_title">Race & Gender</h2>
+			<div class="customize_race_and_gender">
+				<div style="background-image: url(https://www.catseyexi.com/theme/v1/images/chars/1/0.jpg);" data-race="Hume_Male" data-gender="1"><span>Hume Male</span></div>
+				<div style="background-image: url(https://www.catseyexi.com/theme/v1/images/chars/2/0.jpg);" data-race="Hume_Female" data-gender="2"><span>Hume Female</span></div>
+
+				<div style="background-image: url(https://www.catseyexi.com/theme/v1/images/chars/3/0.jpg);" data-race="Elvaan_Male" data-gender="1"><span>Elvaan Male</span></div>
+				<div style="background-image: url(https://www.catseyexi.com/theme/v1/images/chars/4/0.jpg);" data-race="Elvaan_Female" data-gender="2"><span>Elvaan Femal</span>e</div>
+
+				<div style="background-image: url(https://www.catseyexi.com/theme/v1/images/chars/5/0.jpg);" data-race="Tarutaru" data-gender="1"><span>Tarutaru Male</span></div>
+				<div style="background-image: url(https://www.catseyexi.com/theme/v1/images/chars/6/0.jpg);" data-race="Tarutaru" data-gender="2"><span>Tarutaru Female</span></div>
+
+				<div style="background-image: url(https://www.catseyexi.com/theme/v1/images/chars/7/0.jpg);" data-race="Mithra" data-gender="2"><span>Mithra</span></div>
+				<div style="background-image: url(https://www.catseyexi.com/theme/v1/images/chars/8/0.jpg);" data-race="Galka" data-gender="1"><span>Galka</span></div>
+			</div>
+		</div>
+		<div class="emotes">
+			<select class="select_emote_list">
+				<optgroup label="Anims">
+					<option value="idl">Idle</option>
+					<option value="wlk">Walk</option>
+					<option value="run">Run</option>
+					<option value="jmp">Jump</option>
+				</optgroup>
+
+				<optgroup label="Testing">
+					<option value="gc1">gc1</option>
+					<option value="gh1">gh1</option>
+					<option value="ma0">ma0</option>
+					<option value="ma2">ma2</option>
+					<option value="mb0">mb0</option>
+					<option value="mi1">mi1</option>
+					<option value="mn0">mn0</option>
+					<option value="mn2">mn2</option>
+					<option value="ms0">ms0</option>
+					<option value="mw0">mw0</option>
+					<option value="ri0">ri0</option>
+					<option value="rx1">rx1</option>
+					<option value="sf1">sf1</option>
+					<option value="si1">si1</option>
+					<option value="sk1">sk1</option>
+					<option value="yu1">yu1</option>
+				</optgroup>
+			</select>
+		</div>
+
+		
+		<div class="loading">loading</div>
+		
+		<script>
+			let anim = "idl";
+			let race = "Hume_Male";
+			let gender = 1; // only needed for tarutaru
+			let slots = ["face", "body", "hands", "legs", "feet"];
+
+			let anim_races = {
+				Hume_Male: "anims/Hume_Male/Basic/cm00.noefbxmulti - [name][index].fbx",
+				Hume_Female: "anims/Hume_Female/Basic/cor0.noefbxmulti - [name][index].fbx",
+				Elvaan_Male: "anims/Elvaan_Male/Basic/wlk0.noefbxmulti - [name][index].fbx",
+				Elvaan_Female: "anims/Elvaan_Female/Basic/mou4.noefbxmulti - [name][index].fbx",
+				Galka: "anims/Galka/Basic/cor0.noefbxmulti - [name][index].fbx",
+				Mithra: "anims/Mithra/Basic/wlk0.noefbxmulti - [name][index].fbx",
+				Tarutaru: "anims/Tarutaru/Basic/wlk0.noefbxmulti - [name][index].fbx",
+			};
+
+			let camera_races = {
+				Hume_Male: 220,
+				Hume_Female: 210,
+				Elvaan_Male: 280,
+				Elvaan_Female: 270,
+				Galka: 300,
+				Mithra: 220,
+				Tarutaru: 100,
+			};
+
+			// Access variables
+			let camera, scene, renderer, controls, asset_objects = {};
+			let asset_loaded_data;
+		</script>
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "https://unpkg.com/three@v0.160.0/build/three.module.js",
+					"three/addons/": "https://unpkg.com/three@v0.160.0/examples/jsm/"
+				}
+			}
+		</script>
+		<script type="module">
+			import * as THREE from 'three';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+			import { FirstPersonControls } from 'three/addons/controls/FirstPersonControls.js';
+			import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+
+			// threejs
+			const clock = new THREE.Clock();
+			const fbxloader = new FBXLoader();
+			const targetFrameRate = 60; // Set your target frame rate
+			const frameDelay = 1000 / targetFrameRate;
+			let lastFrameTime = 0;
+		
+			// Initially render the form
+			function InitRenderer() {
+				const container = document.querySelector('.model_viewer');
+
+				// Add the camera
+				camera = new THREE.PerspectiveCamera(32, window.innerWidth / window.innerHeight, 2, 2000);
+				scene = new THREE.Scene();
+
+				// Add hemi light
+				const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x222222, 2 );
+				hemiLight.position.set(0, 1000, 0);
+				scene.add(hemiLight);
+
+				// Add directional lighting
+				const dirLight = new THREE.DirectionalLight( 0xffffff, 8);
+				dirLight.position.set(5, 5, 5);
+				dirLight.castShadow = true;
+				scene.add(dirLight);
+
+				// Optionally, you can add an ambient light to brighten the scene.
+				var ambientLight = new THREE.AmbientLight(0xFFFFFF);
+				scene.add(ambientLight);
+
+				// Render
+				renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+				renderer.setClearColor(0x000000, 0);
+				renderer.setPixelRatio(window.devicePixelRatio);
+				renderer.setSize(window.innerWidth, window.innerHeight);
+				container.appendChild(renderer.domElement);
+				renderer.shadowMap.enabled = true;
+				renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+				
+				// Set specific controls
+				controls = new OrbitControls( camera, renderer.domElement );
+				
+				controls.minDistance = 150;
+				controls.maxDistance = 800;
+				controls.panSpeed = 0.5;
+				controls.zoomSpeed = 1.5;
+				controls.screenSpacePanning = true;
+				controls.update();
+
+				SetCameraPositionForRace();
+			}
+
+			function SetCameraPositionForRace() {
+				const height = camera_races[race];
+
+				let cp_x = camera.position.x;
+				let cp_y = camera.position.y;
+				let cp_z = camera.position.z;
+
+				let ct_x = controls.target.x;
+				let ct_y = controls.target.y;
+				let ct_z = controls.target.z;
+
+				cp_z = cp_z < 1 ? 500 : cp_z;
+
+				camera.position.set(cp_x, height, cp_z);
+				controls.target.set(ct_x, height, ct_z);
+			}
+
+			/**
+			 * Add FBX files.
+			 */
+			function LoadFBX(filename, slot) {
+				// Load the FBX Model
+				fbxloader.load(filename, function(object) {
+					object.scale.set(3, 3, 3);
+					object.castShadow = true;
+					object.receiveShadow = true;
+					
+					// Enable alphas
+					object.traverse(function(child) {
+						if (child.material) {
+							child.material.specular = new THREE.Color(0x000000);
+							child.material.side = THREE.DoubleSide;
+							child.material.transparent = true;
+							child.material.alphaTest = 0.9;
+							child.material.needsUpdate = true;
+							//child.material.name.includes('softblend')
+						}						
+					});
+
+					scene.add(object);
+					asset_objects[slot] = object
+				});
+			}
+
+			/**
+			 * Load the default Race mesh
+			 */
+			function LoadRace() {
+				let fbx_face, fbx_face2, fbx_body, fbx_hands, fbx_legs, fbx_feet;
+
+				switch(race) {
+					case "Hume_Male": {
+						fbx_face = "gear/Hume_Male/Face/F1A/F1A.fbx";
+						fbx_body = "gear/Hume_Male/Body/Default/Default.fbx";
+						fbx_hands = "gear/Hume_Male/Hands/Default/Default.fbx";
+						fbx_legs = "gear/Hume_Male/Legs/Default/Default.fbx";
+						fbx_feet = "gear/Hume_Male/Feet/Default/Default.fbx";
+						break;
+					}
+
+					case "Hume_Female": {
+						fbx_face = "gear/Hume_Female/Face/F1A/F1A.fbx";
+						fbx_body = "gear/Hume_Female/Body/Default/Default.fbx";
+						fbx_hands = "gear/Hume_Female/Hands/Default/Default.fbx";
+						fbx_legs = "gear/Hume_Female/Legs/Default/Default.fbx";
+						fbx_feet = "gear/Hume_Female/Feet/Default/Default.fbx";
+						break;
+					}
+
+					case "Elvaan_Male": {
+						fbx_face = "gear/Elvaan_Male/Face/F1A/F1A.fbx";
+						fbx_body = "gear/Elvaan_Male/Body/Default/Default.fbx";
+						fbx_hands = "gear/Elvaan_Male/Hands/Default/Default.fbx";
+						fbx_legs = "gear/Elvaan_Male/Legs/Default/Default.fbx";
+						fbx_feet = "gear/Elvaan_Male/Feet/Default/Default.fbx";
+						break;
+					}
+
+					case "Elvaan_Female": {
+						fbx_face = "gear/Elvaan_Female/Face/F1A/F1A.fbx";
+						fbx_body = "gear/Elvaan_Female/Body/Default/Default.fbx";
+						fbx_hands = "gear/Elvaan_Female/Hands/Default/Default.fbx";
+						fbx_legs = "gear/Elvaan_Female/Legs/Default/Default.fbx";
+						fbx_feet = "gear/Elvaan_Female/Feet/Default/Default.fbx";
+						break;
+					}
+
+					case "Tarutaru": {
+						fbx_face = "gear/Tarutaru/Face/Male_F1A/Male_F1A.fbx";
+						fbx_face2 = "gear/Tarutaru/Face/Female_F1A/Female_F1A.fbx";
+						fbx_body = "gear/Tarutaru/Body/Default/Default.fbx";
+						fbx_hands = "gear/Tarutaru/Hands/Default/Default.fbx";
+						fbx_legs = "gear/Tarutaru/Legs/Default/Default.fbx";
+						fbx_feet = "gear/Tarutaru/Feet/Default/Default.fbx";
+						break;
+					}
+
+					case "Mithra": {
+						fbx_face = "gear/Mithra/Face/F1A/F1A.fbx";
+						fbx_body = "gear/Mithra/Body/Default/Default.fbx";
+						fbx_hands = "gear/Mithra/Hands/Default/Default.fbx";
+						fbx_legs = "gear/Mithra/Legs/Default/Default.fbx";
+						fbx_feet = "gear/Mithra/Feet/Default/Default.fbx";
+						break;
+					}
+
+					case "Galka": {
+						fbx_face = "gear/Galka/Face/F1A/F1A.fbx";
+						fbx_body = "gear/Galka/Body/Default/Default.fbx";
+						fbx_hands = "gear/Galka/Hands/Default/Default.fbx";
+						fbx_legs = "gear/Galka/Legs/Default/Default.fbx";
+						fbx_feet = "gear/Galka/Feet/Default/Default.fbx";
+						break;
+					}
+				}
+
+				// Perform clean up and remove any current objects
+				if (Object.keys(asset_objects).length == 5) {
+					for(let slot of slots) {
+						scene.remove(asset_objects[slot]);
+						asset_objects[slot].traverse(function (child) {
+							if (child instanceof THREE.Mesh) {
+								child.geometry.dispose();
+								child.material.dispose();
+							}
+						});
+						delete asset_objects[slot];
+					}
+				}
+
+				// switch to face 2 for tarutaru female
+				fbx_face = race == "Tarutaru" ? (gender == 2 ? fbx_face2 : fbx_face) : fbx_face;
+
+				// Reset any current animations
+				ResetAnimations();
+
+				// Add the new FBX -- todo, loop config this
+				LoadFBX(fbx_face, "face");
+				LoadFBX(fbx_body, "body");
+				LoadFBX(fbx_hands, "hands");
+				LoadFBX(fbx_legs, "legs");
+				LoadFBX(fbx_feet, "feet");
+				
+				// Load anims
+				const timer = setInterval(function() {
+					if (get_mesh_count() == 5) {
+						clearInterval(timer);
+						LoadAnimations();
+					}
+					
+				}, 200);
+
+				// Reset camera position
+				SetCameraPositionForRace();
+
+				/*
+
+				// Load the new FBX model
+				var newFilename = "path/to/your/new/model.fbx";
+				fbxloader.load(newFilename, function (newObject) {
+					// Replace geometry and materials of the existing object
+					asset_objects[slot].geometry = newObject.geometry;
+					asset_objects[slot].material = newObject.material;
+
+					// Optionally, update other properties if needed
+					// asset_objects[slot].position.copy(newObject.position);
+					// asset_objects[slot].rotation.copy(newObject.rotation);
+					// asset_objects[slot].scale.copy(newObject.scale);
+
+					// Remove the new object from the scene (since we've already replaced the geometry and materials)
+					scene.remove(newObject);
+
+					// If needed, add the existing object back to the scene
+					scene.add(asset_objects[slot]);
+				});
+				*/
+			}
+
+			/**
+			 * Stop and reset any current animations
+			 */
+			function ResetAnimations()
+			{
+				// Dispose all animations
+				if (get_anim_count() > 0) {
+					for(let anim_slot in anim_mixers) {
+						let mixer = anim_mixers[anim_slot];
+						mixer.stopAllAction();
+						delete anim_mixers[anim_slot];
+					}
+				}
+			}
+
+			/**
+			 * Load animations for the current race
+			 */
+			function LoadAnimations()
+			{
+				PlayAnimation(anim, 0, "legs");
+				PlayAnimation(anim, 0, "feet");
+				PlayAnimation(anim, 0, "body");
+				PlayAnimation(anim, 0, "hands");
+				PlayAnimation(anim, 0, "face");
+
+				PlayAnimation(anim, 1, "body");
+				PlayAnimation(anim, 1, "hands");
+				PlayAnimation(anim, 1, "face");
+
+				PlayAnimation(anim, 2, "body");
+			}
+
+			/**
+			 * Play Animation
+			 * - Handles 1, and 2 automatically for upper.
+			 */
+			const anim_mixers = {}
+			function PlayAnimation(anim_name, anim_index, anim_slot) {
+				const fbx_object = asset_objects[anim_slot];
+				const loader = new FBXLoader();
+
+				// Load the correct anim filename for this race
+				let filename = anim_races[race]
+				filename = filename.replace("[name]", anim_name);
+				filename = filename.replace("[index]", anim_index);
+
+				// set save slot
+				const anim_save_slot = anim_slot + anim_index;
+
+				loader.load(filename, function (anim_object) {
+					const mixer = new THREE.AnimationMixer(fbx_object);
+					const clip = anim_object.animations[0];
+					
+					// for anim index 1 or 2 we need to remove these bones otherwise they fight with index 0
+					if (anim_index == 1 || anim_index == 2) {
+						const bonesToRemove = ['bone0000', 'bone0001']; 
+		
+						clip.tracks = clip.tracks.filter(track => {
+							return !bonesToRemove.some(boneName => track.name.includes(boneName));
+						});
+					}
+
+					const action = mixer.clipAction(clip);
+					action.play();
+
+					anim_mixers[anim_save_slot] = mixer;
+				});
+			}
+
+			// Loop render frame
+			function render(currentTime) {
+				// Calculate time since last frame
+				var elapsed = currentTime - lastFrameTime;
+
+				if (elapsed > frameDelay) {
+					let delta = clock.getDelta();
+
+					// refresh controls
+					controls.update();
+
+					// Update anim mixer for any loaded anims
+					for(let slot of slots) {
+						let slot_combos = [slot + "0", slot + "1", slot + "2"];
+
+						for(let slot_path of slot_combos) {
+							if (anim_mixers[slot_path]) {
+								anim_mixers[slot_path].update(delta);
+							}
+						}
+					}
+
+					renderer.render(scene, camera);
+					
+					// Update last frame time
+					lastFrameTime = currentTime;
+				}
+
+				requestAnimationFrame(render);
+			}
+
+			//
+			// THREE.JS
+			//
+
+			// Create the renderer
+			InitRenderer();
+
+			// load race
+			LoadRace();
+
+			// start threejs anim loop
+			requestAnimationFrame(render);
+
+			function get_anim_count() {
+				return Object.keys(anim_mixers).length;
+			}
+
+			function get_mesh_count() {
+				return Object.keys(asset_objects).length;
+			}
+
+			//
+			// CUSTOM LOGIC
+			//
+
+			// ui
+			const ui_loading = $('.loading');
+			const ui_customize = $('.customize');
+			const ui_curtains = $('.model_viewer_curtains');
+
+			function loading_hide() {
+				ui_loading.addClass('loading-fadeout')
+			}
+
+			function loading_show() {
+				ui_loading.removeClass('loading-fadeout')
+			}
+
+			function customize_hide() {
+				ui_customize.removeClass('customize-show')
+			}
+
+			function customize_show() {
+				ui_customize.addClass('customize-show')
+			}
+
+			function curtains_hide() {
+				ui_curtains.addClass('model_viewer_curtains-hide');
+			}
+
+			function curtains_show() {
+				ui_curtains.removeClass('model_viewer_curtains-hide');
+			}
+
+			let load_timer = setInterval(function() {
+				if (get_anim_count() > 0) {
+					clearInterval(load_timer);
+
+					// show customize and hide loading ui
+					customize_show();
+					loading_hide();
+					curtains_hide();
+				}
+			}, 200);
+
+			//
+			// EVENTS
+			//
+
+			$('.select_emote_list').on('change', (event) => {
+				anim = event.target.value;
+				ResetAnimations();
+				LoadAnimations();
+			});
+
+
+			// Add event listener for the asset select category
+			$('.customize_race_and_gender div[data-race]').on('click', event => {
+				event.preventDefault();
+				race = $(event.target).data("race").trim();
+				gender = $(event.target).data("gender");
+
+				customize_hide();
+				loading_show();
+				curtains_show();
+
+				// reset animations and load the selected race
+				setTimeout(function() {
+					ResetAnimations();
+					LoadRace();
+				}, 300);
+
+				let load_timer = setInterval(function() {
+					if (get_anim_count() > 0) {
+						clearInterval(load_timer);
+
+						// show customize and hide loading ui
+						customize_show();
+						loading_hide();
+						curtains_hide();
+					}
+				}, 300);
+			});
+
+			// Listen to window resize to update the renderer size.
+			window.addEventListener('resize', (event) => {
+				if (camera) {
+					camera.aspect = window.innerWidth / window.innerHeight;
+					camera.updateProjectionMatrix();
+				}
+				
+				if (renderer) {
+					renderer.setSize(window.innerWidth, window.innerHeight);
+				}
+			});
+		</script>
+
+	</body>
+</html>

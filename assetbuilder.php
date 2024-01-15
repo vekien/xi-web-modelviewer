@@ -32,6 +32,10 @@ foreach(array_keys($assets) as $assetName) {
             if ($assetName == "Gear") {
                 [$a, $type, $race, $slot, $name, $filename] = explode("/", $path);
 
+                if ($race != "Hume_Male" || $slot != "Face") {
+                    continue;
+                }
+
                 $assets[$assetName][] = [
                     'name' => "{$race} - {$slot} - {$name}",
                     'category' => $assetName,
@@ -41,6 +45,7 @@ foreach(array_keys($assets) as $assetName) {
                 ];
             }
 
+            /*
             // handle npc 1
             if ($assetName == "NPC1") {
                 // if this is an anim, append to anim lists
@@ -104,6 +109,7 @@ foreach(array_keys($assets) as $assetName) {
                     'anims' => false,
                 ];
             }
+            */
         }
     }
 }
