@@ -30,7 +30,7 @@
 				pointer-events: none;
 			}
 			.model_viewer_curtains-hide {
-				opacity: 0;;
+				opacity: 0;
 			}
 			.logo {
 				position: absolute;
@@ -119,6 +119,10 @@
 
 			.customize-show {
 				margin-right: 0;
+			}
+
+			.customize-gray .customize_race_and_gender {
+				filter: grayscale(1);
 			}
 
 			.customize h2 {
@@ -686,6 +690,14 @@
 				ui_customize.addClass('customize-show')
 			}
 
+			function customize_gray() {
+				ui_customize.addClass('customize-gray')
+			}
+
+			function customize_nogray() {
+				ui_customize.removeClass('customize-gray')
+			}
+
 			function curtains_hide() {
 				ui_curtains.addClass('model_viewer_curtains-hide');
 			}
@@ -717,14 +729,21 @@
 
 
 			// Add event listener for the asset select category
+			let is_loading_race = false;
 			$('.customize_race_and_gender div[data-race]').on('click', event => {
 				event.preventDefault();
+
+				if (is_loading_race) {
+					return;
+				}
+
+				is_loading_race = true;
 				race = $(event.target).data("race").trim();
 				gender = $(event.target).data("gender");
 
-				customize_hide();
 				loading_show();
 				curtains_show();
+				customize_gray();
 
 				// reset animations and load the selected race
 				setTimeout(function() {
@@ -737,9 +756,11 @@
 						clearInterval(load_timer);
 
 						// show customize and hide loading ui
-						customize_show();
+						customize_nogray();
 						loading_hide();
 						curtains_hide();
+
+						is_loading_race = false;
 					}
 				}, 300);
 			});
