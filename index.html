@@ -241,8 +241,6 @@
 				<optgroup label="Anims">
 					<option value="idl">Idle</option>
 					<option value="wlk">Walk</option>
-					<option value="run">Run</option>
-					<option value="jmp">Jump</option>
 				</optgroup>
 
 				<optgroup label="Testing">
@@ -293,6 +291,16 @@
 				Galka: 300,
 				Mithra: 220,
 				Tarutaru: 100,
+			};
+
+			let camera_offset_races = {
+				Hume_Male: 0.9,
+				Hume_Female: 0.9,
+				Elvaan_Male: 1,
+				Elvaan_Female: 1,
+				Galka: 0.9,
+				Mithra: 1,
+				Tarutaru: 0.1,
 			};
 
 			// Access variables
@@ -365,23 +373,6 @@
 				SetCameraPositionForRace();
 			}
 
-			function SetCameraPositionForRace() {
-				const height = camera_races[race];
-
-				let cp_x = camera.position.x;
-				let cp_y = camera.position.y;
-				let cp_z = camera.position.z;
-
-				let ct_x = controls.target.x;
-				let ct_y = controls.target.y;
-				let ct_z = controls.target.z;
-
-				cp_z = cp_z < 1 ? 500 : cp_z;
-
-				camera.position.set(cp_x, height, cp_z);
-				controls.target.set(ct_x, height, ct_z);
-			}
-
 			/**
 			 * Add FBX files.
 			 */
@@ -391,7 +382,7 @@
 					object.scale.set(3, 3, 3);
 					object.castShadow = true;
 					object.receiveShadow = true;
-					
+
 					// Enable alphas
 					object.traverse(function(child) {
 						if (child.material) {
@@ -513,12 +504,11 @@
 					if (get_mesh_count() == 5) {
 						clearInterval(timer);
 						LoadAnimations();
+						SetCameraPositionForRace();
 					}
-					
 				}, 200);
 
-				// Reset camera position
-				SetCameraPositionForRace();
+				
 
 				/*
 
@@ -577,6 +567,33 @@
 			}
 
 			/**
+			 * Try to set a nice camera position
+			 */
+			function SetCameraPositionForRace() {
+				const height = camera_races[race];
+				const offset = camera_offset_races[race];
+
+				let zoom_offset = camera.position.z - 400;
+				zoom_offset = zoom_offset >= 0 ? zoom_offset : 0;
+				zoom_offset = zoom_offset * 0.2;
+				zoom_offset = zoom_offset * offset;
+
+				let cp_x = camera.position.x;
+				let cp_y = camera.position.y;
+				let cp_z = camera.position.z;
+
+				let ct_x = controls.target.x;
+				let ct_y = controls.target.y;
+				let ct_z = controls.target.z;
+
+				cp_z = cp_z < 1 ? 500 : cp_z;
+
+				camera.position.set(cp_x, height - zoom_offset, cp_z);
+				controls.target.set(ct_x, height - zoom_offset, ct_z);
+
+			}
+
+			/**
 			 * Play Animation
 			 * - Handles 1, and 2 automatically for upper.
 			 */
@@ -596,15 +613,16 @@
 				loader.load(filename, function (anim_object) {
 					const mixer = new THREE.AnimationMixer(fbx_object);
 					const clip = anim_object.animations[0];
-					
-					// for anim index 1 or 2 we need to remove these bones otherwise they fight with index 0
+					let bones_remove = [];
+
+					// always remove bone 0000 and 0001 from anim indexs 1 and 2
 					if (anim_index == 1 || anim_index == 2) {
-						const bonesToRemove = ['bone0000', 'bone0001']; 
-		
-						clip.tracks = clip.tracks.filter(track => {
-							return !bonesToRemove.some(boneName => track.name.includes(boneName));
-						});
+						bones_remove = ['bone0000', 'bone0001'];
 					}
+
+					clip.tracks = clip.tracks.filter(track => {
+						return !bones_remove.some(boneName => track.name.includes(boneName));
+					})
 
 					const action = mixer.clipAction(clip);
 					action.play();
@@ -656,6 +674,9 @@
 
 			// start threejs anim loop
 			requestAnimationFrame(render);
+
+			// Reset camera position
+			SetCameraPositionForRace();
 
 			function get_anim_count() {
 				return Object.keys(anim_mixers).length;
@@ -723,8 +744,26 @@
 
 			$('.select_emote_list').on('change', (event) => {
 				anim = event.target.value;
-				ResetAnimations();
-				LoadAnimations();
+
+				curtains_show();
+				loading_show();
+
+				// reset animations and load the selected race
+				setTimeout(function() {
+					ResetAnimations();
+				}, 200);
+				
+				// reset animations and load the selected race
+				setTimeout(function() {
+					LoadAnimations();
+				}, 300);
+
+				// reset animations and load the selected race
+				setTimeout(function() {
+					loading_hide();
+					curtains_hide();
+				}, 500);
+				
 			});
 
 
